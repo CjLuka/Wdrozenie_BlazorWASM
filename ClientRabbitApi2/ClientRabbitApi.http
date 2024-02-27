@@ -1,0 +1,6 @@
+@ClientRabbitApi_HostAddress = http://localhost:5268
+
+GET {{ClientRabbitApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

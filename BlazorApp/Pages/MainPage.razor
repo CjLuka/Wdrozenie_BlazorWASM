@@ -1,0 +1,78 @@
+﻿@page "/mainpage"
+@using BlazorApp.Models
+@using BlazorApp.Services
+@using Pages.Components
+@using ClientLibrary.Repository.Interaces
+@inject UserService UserService
+
+<style>
+    .components-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .component {
+        width: 45%;
+        height: 300px;
+        margin: 10px;
+        overflow: auto;
+        border: 1px solid #ccc;
+    }
+</style>
+
+<div>
+    <h3>Wybierz komponent:</h3>
+    <select @onchange="OnComponentSelected">
+        <option value="">Wybierz użytkownika</option>
+        @foreach (var user in users)
+        {
+            <option value="@user.Email">@user.Email</option>
+        }
+    </select>
+</div>
+
+<div class="components-container">
+    @foreach (var user in SelectedUsers)
+    {
+        <div class="component">
+            <BlazorApp.Pages.Components.Component SelectedUser="user" />
+        </div>
+    }
+</div>
+
+@code {
+    private List<string> displayedComponents = new List<string>();
+    // private List<User> users = new List<User>();
+    // private User SelectedUser;
+    private List<User> SelectedUsers = new List<User>();
+    private List<User> users = new List<User>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetAll();
+        foreach (var user in users)
+        {
+            displayedComponents.Add($"Component{user.Email}");
+        }
+    }
+    private void OnComponentSelected(ChangeEventArgs e)
+    {
+        var selectedEmail = e.Value.ToString();
+        var selectedUser = users.FirstOrDefault(u => u.Email == selectedEmail);
+        if (selectedUser != null && !SelectedUsers.Contains(selectedUser))
+        {
+            SelectedUsers.Add(selectedUser);
+        }
+    }
+    // private async void OnComponentSelected(ChangeEventArgs e)
+    // {
+    //     var selectedComponent = e.Value.ToString();
+    //     if (!displayedComponents.Contains(selectedComponent))
+    //     {
+    //         displayedComponents.Add(selectedComponent);
+    //     }
+    // }
+}
