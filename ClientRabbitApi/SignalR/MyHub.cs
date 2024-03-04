@@ -1,10 +1,17 @@
 ﻿using ClientRabbitApi.Models;
+using ClientRabbitApi.Redis;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ClientRabbitApi.SignalR
 {
     public class MyHub : Hub
     {
+        private readonly RedisService _redisService;
+
+        public MyHub(RedisService redisService)
+        {
+            _redisService = redisService;
+        }
         public async Task SendMessage(Message message)
         {
             //await Clients.User(message.Email).SendAsync("ReceiveMessage", message);
@@ -13,17 +20,6 @@ namespace ClientRabbitApi.SignalR
 
             //await Clients.All.SendAsync("ReceiveMessage", message);
         }
-        //public override async Task OnConnectedAsync()
-        //{
-        //    var connectionId = Context.ConnectionId;
-        //    // Tutaj możesz zrobić coś z connectionId, na przykład zapisywać go w bazie danych
-        //    await base.OnConnectedAsync();
-        //}
-        //public async Task SendMessage(Message message)
-        //{
-        //    var connectionId = Context.ConnectionId;
-        //    await Clients.Client(connectionId).SendAsync("NewMessage", message);
-        //}
         public async Task SendMessage2(Message message)
         {
             await Clients.All.SendAsync("ReceiveMessage", message);
@@ -32,6 +28,10 @@ namespace ClientRabbitApi.SignalR
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, email);
         }
-
+        //Funkcja służąca do obsługi flagi, czy dany widok jest włączony i powinno się na niego wysyłać wiadomości
+        public async Task UpdateUserViewFlag(string email, bool isViewEnabled)
+        {
+            await _redisService.UpdateUserViewFlagAsync(email, isViewEnabled);
+        }
     }
 }

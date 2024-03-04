@@ -1,4 +1,5 @@
 ﻿using ClientRabbitApi.Models;
+using ClientRabbitApi.Redis;
 using ClientRabbitApi.SignalR;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
@@ -20,13 +21,15 @@ namespace ClientRabbitApi.Listener
         private readonly IHostEnvironment _hostEnvironment;
         private Timer watchdogTimer = null;
         private readonly IConnection _connection;
+        private readonly RedisService _redisService;
 
 
-        public RabbitListener(IHubContext<MyHub> hubContext, IHostEnvironment hostEnvironment)
+        public RabbitListener(IHubContext<MyHub> hubContext, IHostEnvironment hostEnvironment, RedisService redisService)
         {
             
             _hubContext = hubContext;
             _hostEnvironment = hostEnvironment;
+            _redisService = redisService;
             factory = new ConnectionFactory()
             {
                 UserName = "guest",
@@ -79,7 +82,13 @@ namespace ClientRabbitApi.Listener
                         //var email = message.Email;
                         //await _hubContext.Clients.All.SendAsync("ReceiveMessage", message);
                         //await _hubContext.Clients.Client(message.Email).SendAsync("ReceiveMessage", message);
-                        await _hubContext.Clients.Group(message.Email).SendAsync("NewMessage", message);
+
+                        var isViewEnabled = await _redisService.GetUserViewFlagAsync(message.Email);
+                        if (isViewEnabled)
+                        {
+                            await _hubContext.Clients.Group(message.Email).SendAsync("NewMessage", message);
+                        }
+
                     }
                     catch (Exception)
                     {

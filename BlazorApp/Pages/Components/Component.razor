@@ -2,14 +2,18 @@
 @using BlazorApp.Models
 @using Microsoft.AspNetCore.SignalR.Client
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
 @* <style>
     .messages-container {
         overflow-y: auto;
     }
 </style> *@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <h1>@SelectedUser.Email</h1>
 @* <div id="messagesContainer" class="messages-container"> *@
-<div>
+<div class="messages-container" id="@($"table2_{SelectedUser.Email}")">
     <table class="table">
         <thead>
             <tr>
@@ -20,24 +24,24 @@
         <tbody>
             @foreach (var message in messages)
             {
-				    <tr>
-					    <td>@message.UserId</td>
-					    <td>@message.Context</td>
-				    </tr>
+		        <tr>
+				    <td>@message.Email</td>
+				    <td>@message.UserId</td>
+			    </tr>
             }
         </tbody>
     </table>
 </div>
 
-@* <script>
-    window.scrollToBottom = function (messagesContainer) {
-        console.log("scrollToBottom called");
-        var element = document.getElementById(messagesContainer);
-        element.scrollTop = element.scrollHeight;
-        
+<script>
+    window.scrollToBottom = function (tableId) {
+        var table = document.getElementById(tableId);
+        if (table && table.lastElementChild) {
+            table.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+        }
     }
-    //window.scrollTo(0, document.getElementById("messagesContainer"));
-</script> *@
+</script>
+
 @code {
     [Parameter]
     public User SelectedUser { get; set; }
@@ -54,41 +58,58 @@
             .WithUrl("https://localhost:7141/chat")
             .Build();
 
+
+        NavigationManager.LocationChanged += HandleLocationChanged;
+
         hubConnection.On<Message>("NewMessage", (incomingMessage) =>
         {
+
             InvokeAsync(() =>
             {
                 if (incomingMessage.Email == email)
                 {
                     messages.Add(incomingMessage);
                     updateOn = DateTime.Now.ToLongTimeString();
+                    //hubConnection.InvokeAsync("UpdateUserViewFlag", incomingMessage.Email, true);
                     StateHasChanged();
-                    ScrollToBottom();
+                    Task.Delay(50).ContinueWith(_ => ScrollToBottom());
+                    //ScrollToBottom();
                 }
             });
         });
-
+        
         try
         {
             await hubConnection.StartAsync();
+
+            await hubConnection.InvokeAsync("UpdateUserViewFlag", email, true);
+
             await hubConnection.InvokeAsync("JoinUser", email);
+            //await ScrollToBottom();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error starting SignalR hub: {ex.Message}");
         }
     }
+    private async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        await DisposeAsync();
+    }
+
 
     private async Task ScrollToBottom()
     {
-        await JSRuntime.InvokeVoidAsync("scrollToBottom", "messagesContainer");
+        await JSRuntime.InvokeVoidAsync("scrollToBottom", $"table2_{SelectedUser.Email}");
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (hubConnection != null)
-        {
+        //if (hubConnection != null)
+        //{
+            NavigationManager.LocationChanged -= HandleLocationChanged;
+            await hubConnection.InvokeAsync("UpdateUserViewFlag", email, false);
             await hubConnection.DisposeAsync();
-        }
+        //}
     }
 }

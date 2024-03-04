@@ -1,6 +1,7 @@
 using ClientLibrary;
 using ClientRabbitApi;
 using ClientRabbitApi.Listener;
+using ClientRabbitApi.Redis;
 using ClientRabbitApi.SignalR;
 using Infrastructure;
 using Microsoft.AspNetCore.SignalR;
@@ -14,7 +15,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
+builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<RabbitListener>();
 builder.Services.AddMemoryCache();
